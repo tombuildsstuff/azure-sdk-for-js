@@ -7,6 +7,7 @@ import type { CredentialLogger } from "../util/logging.js";
 import { credentialLogger, formatError } from "../util/logging.js";
 import { DefaultAuthority, DefaultAuthorityHost, DefaultTenantId } from "../constants.js";
 import { randomUUID as coreRandomUUID, isNodeLike } from "@azure/core-util";
+import { getDisableInstanceDiscoveryFromEnvironment } from "../util/cloudEnvironment.js";
 
 import { AbortError } from "@azure/abort-controller";
 import type { AzureLogLevel } from "@azure/logger";
@@ -83,7 +84,10 @@ export function getKnownAuthorities(
   authorityHost: string,
   disableInstanceDiscovery?: boolean,
 ): string[] {
-  if ((tenantId === "adfs" && authorityHost) || disableInstanceDiscovery) {
+  // Application code wins: an explicit disableInstanceDiscovery is honoured as given. Otherwise
+  // AZURE_DISABLE_INSTANCE_DISCOVERY decides, so a single variable covers every credential type.
+  const disabled = disableInstanceDiscovery ?? getDisableInstanceDiscoveryFromEnvironment();
+  if ((tenantId === "adfs" && authorityHost) || disabled) {
     return [authorityHost];
   }
   return [];
